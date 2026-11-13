@@ -1,0 +1,656 @@
+[
+ {
+  "sra_number": "DEMO0001",
+  "name": "Aire Street Employment Law (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Discrimination/civil liberties/human rights",
+   "Employment"
+  ],
+  "offices": [
+   {
+    "name": "Aire Street Employment Law",
+    "type": "Head Office",
+    "address": "11 Example Street",
+    "town": "Leeds",
+    "postcode": "LS1 4DL",
+    "phone": "0113 496 0107",
+    "email": "hello@firm1.example.com",
+    "website": "https://firm1.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0002",
+  "name": "Kirkgate Workplace Solicitors (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Discrimination/civil liberties/human rights",
+   "Employment",
+   "Litigation - other"
+  ],
+  "offices": [
+   {
+    "name": "Kirkgate Workplace Solicitors",
+    "type": "Head Office",
+    "address": "12 Example Street",
+    "town": "Leeds",
+    "postcode": "LS2 7HY",
+    "phone": "0113 496 0114",
+    "email": "hello@firm2.example.com",
+    "website": "https://firm2.example.com"
+   },
+   {
+    "name": "Kirkgate Workplace Solicitors",
+    "type": "Branch",
+    "address": "12 Example Street",
+    "town": "Wakefield",
+    "postcode": "WF1 1QX",
+    "phone": "0113 496 0115",
+    "email": "hello@firm2.example.com",
+    "website": "https://firm2.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0003",
+  "name": "Headingley Housing & Tenancy Law (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Landlord and tenant (Commercial and Domestic)",
+   "Litigation - other",
+   "Social welfare"
+  ],
+  "offices": [
+   {
+    "name": "Headingley Housing & Tenancy Law",
+    "type": "Head Office",
+    "address": "13 Example Street",
+    "town": "Leeds",
+    "postcode": "LS6 3EN",
+    "phone": "0113 496 0121",
+    "email": "hello@firm3.example.com",
+    "website": "https://firm3.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0004",
+  "name": "Chapeltown Community Legal (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Family/matrimonial",
+   "Immigration",
+   "Landlord and tenant (Commercial and Domestic)",
+   "Mental health",
+   "Social welfare"
+  ],
+  "offices": [
+   {
+    "name": "Chapeltown Community Legal",
+    "type": "Head Office",
+    "address": "14 Example Street",
+    "town": "Leeds",
+    "postcode": "LS7 4BZ",
+    "phone": "0113 496 0128",
+    "email": "hello@firm4.example.com",
+    "website": "https://firm4.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0005",
+  "name": "Briggate Consumer Disputes (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Arbitration and alternative dispute resolution",
+   "Consumer",
+   "Litigation - other"
+  ],
+  "offices": [
+   {
+    "name": "Briggate Consumer Disputes",
+    "type": "Head Office",
+    "address": "15 Example Street",
+    "town": "Leeds",
+    "postcode": "LS1 6HD",
+    "phone": "0113 496 0135",
+    "email": "hello@firm5.example.com",
+    "website": "https://firm5.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0006",
+  "name": "Northern Commercial Partners (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Arbitration and alternative dispute resolution",
+   "Commercial/corporate work for non-listed companies",
+   "Employment",
+   "Intellectual property",
+   "Litigation - other",
+   "Property commercial"
+  ],
+  "offices": [
+   {
+    "name": "Northern Commercial Partners",
+    "type": "Head Office",
+    "address": "16 Example Street",
+    "town": "Leeds",
+    "postcode": "LS1 2AY",
+    "phone": "0113 496 0142",
+    "email": "hello@firm6.example.com",
+    "website": "https://firm6.example.com"
+   },
+   {
+    "name": "Northern Commercial Partners",
+    "type": "Branch",
+    "address": "16 Example Street",
+    "town": "Manchester",
+    "postcode": "M2 3AW",
+    "phone": "0113 496 0143",
+    "email": "hello@firm6.example.com",
+    "website": "https://firm6.example.com"
+   },
+   {
+    "name": "Northern Commercial Partners",
+    "type": "Branch",
+    "address": "16 Example Street",
+    "town": "London",
+    "postcode": "EC2A 4NE",
+    "phone": "0113 496 0144",
+    "email": "hello@firm6.example.com",
+    "website": "https://firm6.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0007",
+  "name": "Dock Street Business Law (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Commercial/corporate work for non-listed companies",
+   "Consumer",
+   "Intellectual property",
+   "Litigation - other"
+  ],
+  "offices": [
+   {
+    "name": "Dock Street Business Law",
+    "type": "Head Office",
+    "address": "17 Example Street",
+    "town": "Leeds",
+    "postcode": "LS10 1JF",
+    "phone": "0113 496 0149",
+    "email": "hello@firm7.example.com",
+    "website": "https://firm7.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0008",
+  "name": "Roundhay Family Solicitors (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Children",
+   "Family/matrimonial"
+  ],
+  "offices": [
+   {
+    "name": "Roundhay Family Solicitors",
+    "type": "Head Office",
+    "address": "18 Example Street",
+    "town": "Leeds",
+    "postcode": "LS17 6AJ",
+    "phone": "0113 496 0156",
+    "email": "hello@firm8.example.com",
+    "website": "https://firm8.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0009",
+  "name": "Calder Valley Family & Children (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Children",
+   "Family/matrimonial",
+   "Mental health"
+  ],
+  "offices": [
+   {
+    "name": "Calder Valley Family & Children",
+    "type": "Head Office",
+    "address": "19 Example Street",
+    "town": "Halifax",
+    "postcode": "HX1 1RE",
+    "phone": "0113 496 0163",
+    "email": "hello@firm9.example.com",
+    "website": "https://firm9.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0010",
+  "name": "Millgarth Criminal Defence (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Criminal",
+   "Youth Court"
+  ],
+  "offices": [
+   {
+    "name": "Millgarth Criminal Defence",
+    "type": "Head Office",
+    "address": "20 Example Street",
+    "town": "Leeds",
+    "postcode": "LS2 7AB",
+    "phone": "0113 496 0170",
+    "email": "hello@firm10.example.com",
+    "website": "https://firm10.example.com"
+   },
+   {
+    "name": "Millgarth Criminal Defence",
+    "type": "Branch",
+    "address": "20 Example Street",
+    "town": "Bradford",
+    "postcode": "BD1 1HY",
+    "phone": "0113 496 0171",
+    "email": "hello@firm10.example.com",
+    "website": "https://firm10.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0011",
+  "name": "Pennine Immigration Advisers (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Discrimination/civil liberties/human rights",
+   "Immigration",
+   "Social welfare"
+  ],
+  "offices": [
+   {
+    "name": "Pennine Immigration Advisers",
+    "type": "Head Office",
+    "address": "21 Example Street",
+    "town": "Bradford",
+    "postcode": "BD1 5LH",
+    "phone": "0113 496 0177",
+    "email": "hello@firm11.example.com",
+    "website": "https://firm11.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0012",
+  "name": "Kirkstall Injury Claims (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Litigation - other",
+   "Personal injury"
+  ],
+  "offices": [
+   {
+    "name": "Kirkstall Injury Claims",
+    "type": "Head Office",
+    "address": "22 Example Street",
+    "town": "Leeds",
+    "postcode": "LS3 1AB",
+    "phone": "0113 496 0184",
+    "email": "hello@firm12.example.com",
+    "website": "https://firm12.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0013",
+  "name": "Harrogate Wills & Probate (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Probate and estate administration",
+   "Property - residential",
+   "Wills, trusts and tax planning"
+  ],
+  "offices": [
+   {
+    "name": "Harrogate Wills & Probate",
+    "type": "Head Office",
+    "address": "23 Example Street",
+    "town": "Harrogate",
+    "postcode": "HG1 1DH",
+    "phone": "0113 496 0191",
+    "email": "hello@firm13.example.com",
+    "website": "https://firm13.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0014",
+  "name": "Otley Road Probate Disputes (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Litigation - other",
+   "Probate and estate administration",
+   "Wills, trusts and tax planning"
+  ],
+  "offices": [
+   {
+    "name": "Otley Road Probate Disputes",
+    "type": "Head Office",
+    "address": "24 Example Street",
+    "town": "Leeds",
+    "postcode": "LS6 2RT",
+    "phone": "0113 496 0198",
+    "email": "hello@firm14.example.com",
+    "website": "https://firm14.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0015",
+  "name": "Minster Property Lawyers (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Landlord and tenant (Commercial and Domestic)",
+   "Property - residential",
+   "Property commercial"
+  ],
+  "offices": [
+   {
+    "name": "Minster Property Lawyers",
+    "type": "Head Office",
+    "address": "25 Example Street",
+    "town": "York",
+    "postcode": "YO1 7HH",
+    "phone": "0113 496 0205",
+    "email": "hello@firm15.example.com",
+    "website": "https://firm15.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0016",
+  "name": "Holbeck Creative IP (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Commercial/corporate work for non-listed companies",
+   "Intellectual property"
+  ],
+  "offices": [
+   {
+    "name": "Holbeck Creative IP",
+    "type": "Head Office",
+    "address": "26 Example Street",
+    "town": "Leeds",
+    "postcode": "LS11 5QN",
+    "phone": "0113 496 0212",
+    "email": "hello@firm16.example.com",
+    "website": "https://firm16.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0017",
+  "name": "Sheaf Street Generalists (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Commercial/corporate work for non-listed companies",
+   "Consumer",
+   "Criminal",
+   "Employment",
+   "Family/matrimonial",
+   "Landlord and tenant (Commercial and Domestic)",
+   "Litigation - other",
+   "Personal injury",
+   "Probate and estate administration",
+   "Property - residential",
+   "Wills, trusts and tax planning"
+  ],
+  "offices": [
+   {
+    "name": "Sheaf Street Generalists",
+    "type": "Head Office",
+    "address": "27 Example Street",
+    "town": "Sheffield",
+    "postcode": "S1 2BX",
+    "phone": "0113 496 0219",
+    "email": "hello@firm17.example.com",
+    "website": "https://firm17.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0018",
+  "name": "Wakefield High Street Law (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Consumer",
+   "Family/matrimonial",
+   "Landlord and tenant (Commercial and Domestic)",
+   "Litigation - other",
+   "Property - residential",
+   "Wills, trusts and tax planning"
+  ],
+  "offices": [
+   {
+    "name": "Wakefield High Street Law",
+    "type": "Head Office",
+    "address": "28 Example Street",
+    "town": "Wakefield",
+    "postcode": "WF1 2SN",
+    "phone": "0113 496 0226",
+    "email": "hello@firm18.example.com",
+    "website": "https://firm18.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0019",
+  "name": "Morley Small Business Legal (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Commercial/corporate work for non-listed companies",
+   "Employment",
+   "Litigation - other",
+   "Property commercial"
+  ],
+  "offices": [
+   {
+    "name": "Morley Small Business Legal",
+    "type": "Head Office",
+    "address": "29 Example Street",
+    "town": "Morley",
+    "postcode": "LS27 9DY",
+    "phone": "0113 496 0233",
+    "email": "hello@firm19.example.com",
+    "website": "https://firm19.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0020",
+  "name": "Pudsey Neighbourhood Law (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Consumer",
+   "Landlord and tenant (Commercial and Domestic)",
+   "Property - residential",
+   "Wills, trusts and tax planning"
+  ],
+  "offices": [
+   {
+    "name": "Pudsey Neighbourhood Law",
+    "type": "Head Office",
+    "address": "30 Example Street",
+    "town": "Pudsey",
+    "postcode": "LS28 7BE",
+    "phone": "0113 496 0240",
+    "email": "hello@firm20.example.com",
+    "website": "https://firm20.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0021",
+  "name": "Huddersfield Employment Advocates (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Discrimination/civil liberties/human rights",
+   "Employment"
+  ],
+  "offices": [
+   {
+    "name": "Huddersfield Employment Advocates",
+    "type": "Head Office",
+    "address": "31 Example Street",
+    "town": "Huddersfield",
+    "postcode": "HD1 2TA",
+    "phone": "0113 496 0247",
+    "email": "hello@firm21.example.com",
+    "website": "https://firm21.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0022",
+  "name": "Burley Tenant Rights Clinic (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Discrimination/civil liberties/human rights",
+   "Landlord and tenant (Commercial and Domestic)",
+   "Social welfare"
+  ],
+  "offices": [
+   {
+    "name": "Burley Tenant Rights Clinic",
+    "type": "Head Office",
+    "address": "32 Example Street",
+    "town": "Leeds",
+    "postcode": "LS12 1DS",
+    "phone": "0113 496 0254",
+    "email": "hello@firm22.example.com",
+    "website": "https://firm22.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0023",
+  "name": "Cross Gates Consumer Rights (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Consumer",
+   "Litigation - other",
+   "Personal injury"
+  ],
+  "offices": [
+   {
+    "name": "Cross Gates Consumer Rights",
+    "type": "Head Office",
+    "address": "33 Example Street",
+    "town": "Leeds",
+    "postcode": "LS9 0RT",
+    "phone": "0113 496 0261",
+    "email": "hello@firm23.example.com",
+    "website": "https://firm23.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ },
+ {
+  "sra_number": "DEMO0024",
+  "name": "Brum Corporate Collective (demo)",
+  "trading_names": [],
+  "status": "Authorised",
+  "type": "Recognised body",
+  "work_areas": [
+   "Commercial/corporate work for non-listed companies",
+   "Intellectual property",
+   "Litigation - other",
+   "Property commercial"
+  ],
+  "offices": [
+   {
+    "name": "Brum Corporate Collective",
+    "type": "Head Office",
+    "address": "34 Example Street",
+    "town": "Birmingham",
+    "postcode": "B3 2HJ",
+    "phone": "0113 496 0268",
+    "email": "hello@firm24.example.com",
+    "website": "https://firm24.example.com"
+   }
+  ],
+  "register_url": "https://www.sra.org.uk/consumers/register/"
+ }
+]

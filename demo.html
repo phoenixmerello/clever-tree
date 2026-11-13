@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firm Finder – test page</title>
+<style>
+ body{font-family:system-ui,sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem;color:#1d2433;background:#f7f7f5}
+ textarea,input,select{font:inherit;padding:.55rem;border:1px solid #ccd;border-radius:8px;width:100%;box-sizing:border-box}
+ .row{display:flex;gap:.75rem;margin:.75rem 0}.row>*{flex:1}
+ button{font:inherit;background:#1d4ed8;color:#fff;border:0;border-radius:8px;padding:.7rem 1.4rem;cursor:pointer}
+ .card{background:#fff;border:1px solid #e3e3e8;border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0}
+ .tag{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:99px;padding:.1rem .6rem;font-size:.8rem;margin:.15rem .2rem 0 0}
+ .warn{background:#fff7ed;border-color:#fed7aa}.muted{color:#667;font-size:.85rem}.fit{float:right;font-weight:700;color:#15803d}
+ label{font-size:.85rem;color:#445}
+</style></head><body>
+<h1>Find a solicitor</h1>
+<div class="row"><div><label>I am</label><select id="ut"><option value="individual">An individual</option><option value="business">A small business</option></select></div>
+<div><label>Postcode</label><input id="pc" value="LS6 2AB"></div>
+<div><label>Within (miles)</label><input id="mi" type="number" value="25"></div></div>
+<label>Describe your problem</label>
+<textarea id="p" rows="4">My landlord is refusing to give back my £900 deposit and says I damaged the carpet, but it was like that when I moved in. I'm a student in Headingley.</textarea>
+<div class="row"><label style="flex:0 0 auto"><input type="checkbox" id="rem" style="width:auto"> Happy with remote/phone</label><span></span><button id="go">Find firms</button></div>
+<div id="out"></div>
+<script>
+const $=id=>document.getElementById(id);
+$('go').onclick=async()=>{
+ $('out').innerHTML='<p class="muted">Matching your problem to the SRA register…</p>';
+ const r=await fetch('/api/recommend-firms',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({problem:$('p').value,user_type:$('ut').value,postcode:$('pc').value,max_miles:+$('mi').value,remote_ok:$('rem').checked})});
+ const d=await r.json(); if(!r.ok){$('out').textContent=d.detail;return}
+ const t=d.triage, esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ let h=`<div class="card ${t.urgency==='emergency'||t.urgency==='high'?'warn':''}"><b>${esc(t.summary)}</b><br>
+  <span class="tag">${esc(t.primary_area)}</span>${(t.secondary_areas||[]).map(a=>`<span class="tag">${esc(a)}</span>`).join('')}
+  <p class="muted">Urgency: ${esc(t.urgency)} · Solicitor recommended: ${t.needs_solicitor?'yes':'probably not'}${t.legal_aid_possible?' · Legal aid may be available':''}</p>
+  ${t.deadline_warning?`<p><b>⚠ ${esc(t.deadline_warning)}</b></p>`:''}</div>`;
+ h+=d.firms.map(f=>`<div class="card"><span class="fit">${f.fit}% fit</span><b>${esc(f.name)}</b>
+  <div class="muted">${f.distance_miles!=null?f.distance_miles+' miles · ':''}${esc(f.office.town)} · ${esc(f.office.phone)}</div>
+  <p>${esc(f.why)}</p>${f.matched_areas.map(a=>`<span class="tag">${esc(a)}</span>`).join('')}
+  <p class="muted"><a href="${esc(f.verify_on_sra)}" target="_blank">Verify on SRA register</a> · SRA no. ${esc(f.sra_number)}${f.sra_number_needs_check?' ⚠ number not yet confirmed':''}</p></div>`).join('')
+  || `<div class="card warn"><b>${esc(d.meta.no_match_reason)}</b><p>Try these instead:</p>${(d.meta.fallback_links||[]).map(l=>`<a href="${esc(l.url)}" target="_blank">${esc(l.label)}</a>`).join('<br>')}</div>`;
+ h+=`<p class="muted">Source: ${esc(d.meta.data_source)} · ${d.meta.candidates_considered} firms considered · ${esc(d.meta.disclaimer)}</p>`;
+ $('out').innerHTML=h;
+};
+</script></body></html>

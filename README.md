@@ -1,3 +1,82 @@
+# Legal Help API: self-help check + firm finder
+
+Two features:
+1. **`/api/assess`** decides whether the user can sort the problem themselves using official GOV.UK guidance, needs to answer a few questions first, or should see a solicitor.
+2. **`/api/recommend-firms`** picks the best-matched firms from our directory, each with a reason.
+
+**React flow:** call `/api/assess` first.
+- `self_help` → show the guidance, plus a "Still stuck?" button that calls `/api/recommend-firms`.
+- `ask_more` → show the questions and call `/api/assess` again.
+- `specialist` → show the firms. They're already included in the response.
+
+---
+
+# Self-help vs specialist (`/api/assess`)
+
+Our solicitor's rule: **if the answer can be found on GOV.UK (backed by legislation.gov.uk), it's self-help.**
+The decision is made like this:
+
+| Step | What happens |
+|---|---|
+| 1. Red flags | A red flag sends the user **straight to a specialist**, whatever else is true. There are 11 "always see a lawyer" rules in `firm_finder/red_flags.py` (court papers, criminal, safety, losing home, immigration, statutory demand, over £10k, other side has a lawyer, etc.). They're checked by regex **and** by the AI, so reworded versions are caught too. |
+| 2. Retrieve | The AI writes GOV.UK search queries. The code fetches real pages from the official GOV.UK Search and Content APIs. The AI only reads those pages. |
+| 3. Ground | The AI picks the best section and must **copy the exact sentence** that answers the problem. The code checks that sentence is really on the page. If it isn't, there's no self-help answer. |
+| 4. Score | Confidence is **calculated, not guessed**: 50 points if the quote is verified on GOV.UK, 20 if the page fully covers their situation (10 if partly), and 30 × the share of key facts we know. It's capped at 79 if a critical fact is missing or the coverage is only partial. |
+| 5. Route | **80 or more → self-help.** Below 80 → up to 2 rounds of questions. Still below, or the user presses "I don't know" → specialist. If the GOV.UK page itself says "get legal advice" → specialist. |
+| 6. Law | Acts the AI names are **checked against legislation.gov.uk**. A link is only shown if the Act exists, and a section only if that section exists. |
+
+If GOV.UK or the AI is down, it fails safe: the user is asked a question or sent to a specialist, never shown an unchecked answer.
+
+### `POST /api/assess`
+```json
+{
+  "problem": "My landlord won't return my £900 deposit",
+  "user_type": "individual",
+  "category": null,
+  "answers": [],            // [{question, answer}] collected from earlier ask_more rounds
+  "round": 0,               // how many question rounds the user has answered so far
+  "unsure": false,          // true when user presses "I don't have more information"
+  "postcode": "LS1 4DL", "max_miles": 25, "remote_ok": false,
+  "find_firms": true        // include firm results when the route is specialist
+}
+```
+Response (always the same shape):
+```json
+{
+  "route": "self_help" | "ask_more" | "specialist",
+  "confidence": 0-100,
+  "confidence_breakdown": { "quote_verified": true, "coverage": "full", "facts_known": 2, "facts_total": 2,
+                            "critical_missing": [], "capped_because": null, "...": "..." },
+  "reason": "plain-English sentence to show the user",
+  "red_flags": [{ "id": "losing_home", "label": "...", "why": "..." }],
+  "emergency": null,         // e.g. "If you or anyone else is in immediate danger, call 999..." - show prominently
+  "deadline_warning": "",
+  "guidance": {              // present whenever a GOV.UK answer was verified (even on ask_more/specialist)
+    "answer": "1. ... 2. ...",
+    "quote": "exact sentence from GOV.UK",
+    "source": { "title": "Tenancy deposit protection", "section": "Disputes and problems", "url": "https://www.gov.uk/..." },
+    "law": [{ "title": "Housing Act 2004", "url": "https://www.legislation.gov.uk/ukpga/2004/34",
+              "section": "213", "section_url": "https://www.legislation.gov.uk/ukpga/2004/34/section/213" }],
+    "other_pages": [{ "title": "...", "url": "..." }]
+  },
+  "questions": ["..."],      // only for ask_more
+  "round": 0, "max_rounds": 2,
+  "triage": { "...": "..." },
+  "next": { "action": "find_firms" | "offer_firms_if_stuck", "endpoint": "/api/recommend-firms", "triage": {} },
+  "firms": { "...": "same shape as /api/recommend-firms" },   // only for specialist when find_firms=true
+  "disclaimer": "..."
+}
+```
+**Questions loop in React:** when `route` is `ask_more`, add each `{question, answer}` to `answers`, increase `round` by 1, and POST again. Send the same `problem` every time.
+
+### Editing the red flags
+`firm_finder/red_flags.py` has one `Rule` per red flag: a label, a plain-English reason, and regex patterns. Add or change patterns there, then run the tests.
+
+### Tests
+`python -m pytest -q` runs 30 offline tests, covering every route plus attempts to fake a quote, a page section or an Act. They include 48 checks that red flags fire when they should and stay quiet on everyday cases like parking fines, deposits and probate.
+
+---
+
 # Firm Finder
 
 The "find me a solicitor" feature. A user describes their legal problem, and the feature returns the best-matched firms from our directory, each with a plain-English reason why it fits.
@@ -73,7 +152,12 @@ Returns every practice area in the data. Useful for building category buttons.
 
 ## Files
 ```
-app.py                 FastAPI endpoints + test page
+app.py                 FastAPI endpoints + test page (demo.html)
+firm_finder/guidance.py   self-help vs specialist pipeline + confidence score
+firm_finder/red_flags.py  'always see a lawyer' rules
+firm_finder/govuk.py      GOV.UK Search + Content API
+firm_finder/legislation.py  verify Acts/sections on legislation.gov.uk
+tests/                 offline test suite
 firm_finder/ai.py      the two Claude calls (+ no-key fallback)
 firm_finder/service.py the pipeline
 firm_finder/sra.py     loads data/firms.xlsx (or the official SRA API if SRA_API_KEY is set)

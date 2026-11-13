@@ -1,42 +1,87 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Firm Finder – test page</title>
+<title>Legal help – test page</title>
 <style>
  body{font-family:system-ui,sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem;color:#1d2433;background:#f7f7f5}
  textarea,input,select{font:inherit;padding:.55rem;border:1px solid #ccd;border-radius:8px;width:100%;box-sizing:border-box}
- .row{display:flex;gap:.75rem;margin:.75rem 0}.row>*{flex:1}
- button{font:inherit;background:#1d4ed8;color:#fff;border:0;border-radius:8px;padding:.7rem 1.4rem;cursor:pointer}
+ .row{display:flex;gap:.75rem;margin:.75rem 0;align-items:end}.row>*{flex:1}
+ button{font:inherit;background:#1d4ed8;color:#fff;border:0;border-radius:8px;padding:.65rem 1.2rem;cursor:pointer}
+ button.alt{background:#fff;color:#1d4ed8;border:1px solid #1d4ed8}
  .card{background:#fff;border:1px solid #e3e3e8;border-radius:12px;padding:1rem 1.2rem;margin:.8rem 0}
  .tag{display:inline-block;background:#eef2ff;color:#3730a3;border-radius:99px;padding:.1rem .6rem;font-size:.8rem;margin:.15rem .2rem 0 0}
- .warn{background:#fff7ed;border-color:#fed7aa}.muted{color:#667;font-size:.85rem}.fit{float:right;font-weight:700;color:#15803d}
+ .warn{background:#fff7ed;border-color:#fed7aa}.bad{background:#fef2f2;border-color:#fecaca}.ok{background:#f0fdf4;border-color:#bbf7d0}
+ .muted{color:#667;font-size:.85rem}.fit{float:right;font-weight:700;color:#15803d}
+ blockquote{margin:.6rem 0;padding:.4rem .9rem;border-left:4px solid #1d4ed8;background:#f5f7ff}
+ .bar{height:8px;border-radius:9px;background:#e5e7eb;overflow:hidden}.bar>i{display:block;height:100%;background:#1d4ed8}
  label{font-size:.85rem;color:#445}
 </style></head><body>
-<h1>Find a solicitor</h1>
+<h1>Get legal help</h1>
 <div class="row"><div><label>I am</label><select id="ut"><option value="individual">An individual</option><option value="business">A small business</option></select></div>
-<div><label>Postcode</label><input id="pc" value="LS6 2AB"></div>
-<div><label>Within (miles)</label><input id="mi" type="number" value="25"></div></div>
+<div><label>Postcode</label><input id="pc" value="LS1 4DL"></div></div>
 <label>Describe your problem</label>
-<textarea id="p" rows="4">My landlord is refusing to give back my £900 deposit and says I damaged the carpet, but it was like that when I moved in. I'm a student in Headingley.</textarea>
-<div class="row"><label style="flex:0 0 auto"><input type="checkbox" id="rem" style="width:auto"> Happy with remote/phone</label><span></span><button id="go">Find firms</button></div>
+<textarea id="p" rows="4">My landlord won't give back my £900 deposit. He says I damaged the carpet but it was already like that when I moved in.</textarea>
+<div class="row"><button id="go">Get help</button></div>
 <div id="out"></div>
 <script>
 const $=id=>document.getElementById(id);
-$('go').onclick=async()=>{
- $('out').innerHTML='<p class="muted">Matching your problem to the SRA register…</p>';
- const r=await fetch('/api/recommend-firms',{method:'POST',headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({problem:$('p').value,user_type:$('ut').value,postcode:$('pc').value,max_miles:+$('mi').value,remote_ok:$('rem').checked})});
- const d=await r.json(); if(!r.ok){$('out').textContent=d.detail;return}
- const t=d.triage, esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
- let h=`<div class="card ${t.urgency==='emergency'||t.urgency==='high'?'warn':''}"><b>${esc(t.summary)}</b><br>
-  <span class="tag">${esc(t.primary_area)}</span>${(t.secondary_areas||[]).map(a=>`<span class="tag">${esc(a)}</span>`).join('')}
-  <p class="muted">Urgency: ${esc(t.urgency)} · Solicitor recommended: ${t.needs_solicitor?'yes':'probably not'}${t.legal_aid_possible?' · Legal aid may be available':''}</p>
-  ${t.deadline_warning?`<p><b>⚠ ${esc(t.deadline_warning)}</b></p>`:''}</div>`;
- h+=d.firms.map(f=>`<div class="card"><span class="fit">${f.fit}% fit</span><b>${esc(f.name)}</b>
-  <div class="muted">${f.distance_miles!=null?f.distance_miles+' miles · ':''}${esc(f.office.town)} · ${esc(f.office.phone)}</div>
-  <p>${esc(f.why)}</p>${f.matched_areas.map(a=>`<span class="tag">${esc(a)}</span>`).join('')}
-  <p class="muted"><a href="${esc(f.verify_on_sra)}" target="_blank">Verify on SRA register</a> · SRA no. ${esc(f.sra_number)}${f.sra_number_needs_check?' ⚠ number not yet confirmed':''}</p></div>`).join('')
-  || `<div class="card warn"><b>${esc(d.meta.no_match_reason)}</b><p>Try these instead:</p>${(d.meta.fallback_links||[]).map(l=>`<a href="${esc(l.url)}" target="_blank">${esc(l.label)}</a>`).join('<br>')}</div>`;
- h+=`<p class="muted">Source: ${esc(d.meta.data_source)} · ${d.meta.candidates_considered} firms considered · ${esc(d.meta.disclaimer)}</p>`;
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let state={round:0,answers:[]};
+$('go').onclick=()=>{state={round:0,answers:[]};run(false)};
+
+async function run(unsure){
+ $('out').innerHTML='<p class="muted">Checking official guidance…</p>';
+ const r=await fetch('/api/assess',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+   problem:$('p').value,user_type:$('ut').value,postcode:$('pc').value,round:state.round,answers:state.answers,unsure})});
+ const d=await r.json(); if(!r.ok){$('out').textContent=JSON.stringify(d);return}
+ render(d);
+}
+
+function render(d){
+ let h='';
+ if(d.emergency) h+=`<div class="card bad"><b>${esc(d.emergency)}</b></div>`;
+ const cls={self_help:'ok',ask_more:'warn',specialist:'bad'}[d.route];
+ const title={self_help:'You can sort this yourself',ask_more:'A few quick questions',specialist:'You should speak to a solicitor'}[d.route];
+ h+=`<div class="card ${cls}"><b>${title}</b><p>${esc(d.reason)}</p>`;
+ if(d.confidence_breakdown){const b=d.confidence_breakdown;
+  h+=`<div class="bar"><i style="width:${d.confidence}%"></i></div><p class="muted">Confidence ${d.confidence}% ·
+   quote verified on GOV.UK: ${b.quote_verified?'yes':'no'} · coverage: ${esc(b.coverage)} · facts known ${b.facts_known}/${b.facts_total}
+   ${b.capped_because?' · capped: '+esc(b.capped_because):''}</p>`}
+ (d.red_flags||[]).forEach(f=>h+=`<p>🚩 <b>${esc(f.label)}</b> – ${esc(f.why)}</p>`);
+ if(d.deadline_warning) h+=`<p><b>⚠ ${esc(d.deadline_warning)}</b></p>`;
+ h+='</div>';
+
+ if(d.route==='ask_more'){
+  h+=`<div class="card">${d.questions.map((q,i)=>`<label>${esc(q)}</label><input data-q="${esc(q)}" id="a${i}" style="margin:.3rem 0 .8rem">`).join('')}
+   <div class="row"><button id="send">Continue</button><button class="alt" id="dunno">I don't have more information</button></div>
+   <p class="muted">Round ${d.round+1} of ${d.max_rounds}</p></div>`;
+ }
+ if(d.guidance){const g=d.guidance;
+  h+=`<div class="card"><b>What the official guidance says</b><p style="white-space:pre-line">${esc(g.answer)}</p>
+   <blockquote>“${esc(g.quote)}”</blockquote>
+   <p class="muted">Source: <a href="${esc(g.source.url)}" target="_blank">${esc(g.source.title)} – ${esc(g.source.section)}</a> (GOV.UK)</p>
+   ${g.law.length?`<p class="muted">The law behind this: ${g.law.map(l=>`<a href="${esc(l.section_url||l.url)}" target="_blank">${esc(l.title)}${l.section?' s.'+esc(l.section):''}</a>`).join(', ')}</p>`:''}
+   ${d.route==='self_help'?'<button class="alt" id="stuck">Still stuck? Find a solicitor</button>':''}</div>`;
+ }
+ if(d.related_pages) h+=`<div class="card"><b>Pages that may help</b><br>${d.related_pages.map(p=>`<a href="${esc(p.url)}" target="_blank">${esc(p.title)}</a>`).join('<br>')}</div>`;
+ if(d.firms) h+=firmsHtml(d.firms);
+ h+=`<p class="muted">${esc(d.disclaimer)}</p>`;
  $('out').innerHTML=h;
-};
+
+ if($('send')) $('send').onclick=()=>{
+  document.querySelectorAll('[data-q]').forEach(i=>{if(i.value.trim()) state.answers.push({question:i.dataset.q,answer:i.value})});
+  state.round++; run(false)};
+ if($('dunno')) $('dunno').onclick=()=>run(true);
+ if($('stuck')) $('stuck').onclick=async()=>{
+  const r=await fetch('/api/recommend-firms',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({problem:$('p').value,user_type:$('ut').value,postcode:$('pc').value,triage:d.triage})});
+  $('out').insertAdjacentHTML('beforeend',firmsHtml(await r.json()))};
+}
+
+function firmsHtml(f){
+ if(!f.firms||!f.firms.length) return `<div class="card warn"><b>${esc(f.meta?.no_match_reason||'No firms found')}</b><br>${(f.meta?.fallback_links||[]).map(l=>`<a href="${esc(l.url)}" target="_blank">${esc(l.label)}</a>`).join('<br>')}</div>`;
+ return '<h3>Solicitors who handle this</h3>'+f.firms.map(x=>`<div class="card"><span class="fit">${x.fit}% fit</span><b>${esc(x.name)}</b>
+  <div class="muted">${x.distance_miles!=null?x.distance_miles+' miles · ':''}${esc(x.office.town)} · ${esc(x.office.phone)}</div>
+  <p>${esc(x.why)}</p>${x.matched_areas.map(a=>`<span class="tag">${esc(a)}</span>`).join('')}
+  <p class="muted"><a href="${esc(x.verify_on_sra)}" target="_blank">Verify on SRA register</a> · SRA no. ${esc(x.sra_number)}${x.sra_number_needs_check?' ⚠ number not yet confirmed':''}</p></div>`).join('');
+}
 </script></body></html>

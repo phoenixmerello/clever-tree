@@ -26,7 +26,7 @@ if _env.exists():
             k, v = line.split("=", 1)
             os.environ.setdefault(k.strip(), v.strip())
 
-from firm_finder import service  # noqa: E402
+from firm_finder import guidance, service  # noqa: E402
 
 app = FastAPI(title="Firm Finder")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -48,6 +48,34 @@ def recommend(r: Req):
     try:
         return service.recommend(r.problem, r.user_type, r.postcode, r.category,
                                  r.max_miles, r.remote_ok, r.top_n, r.triage)
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
+class Answer(BaseModel):
+    question: str = Field(max_length=500)
+    answer: str = Field(max_length=2000)
+
+
+class AssessReq(BaseModel):
+    problem: str = Field(min_length=5, max_length=5000)
+    user_type: str = "individual"
+    category: str | None = None
+    answers: list[Answer] = Field(default_factory=list, max_length=10)
+    round: int = Field(0, ge=0, le=5)      # how many question rounds the user has already answered
+    unsure: bool = False                   # user pressed "I don't have more information"
+    postcode: str | None = None
+    max_miles: float = 25
+    remote_ok: bool = False
+    find_firms: bool = True                # include firm results when routed to a specialist
+
+
+@app.post("/api/assess")
+def assess(r: AssessReq):
+    """Self-help (GOV.UK) vs ask more vs specialist. See README for the flow."""
+    try:
+        return guidance.assess(r.problem, r.user_type, r.category, [a.model_dump() for a in r.answers],
+                               r.round, r.unsure, r.postcode, r.max_miles, r.remote_ok, r.find_firms)
     except Exception as e:
         raise HTTPException(500, str(e))
 

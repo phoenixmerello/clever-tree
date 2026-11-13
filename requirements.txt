@@ -4,3 +4,4 @@ httpx
 anthropic
 pydantic
 openpyxl
+pytest

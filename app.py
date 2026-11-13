@@ -28,6 +28,13 @@ if _env.exists():
 
 from firm_finder import guidance, service  # noqa: E402
 
+_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+if _key.startswith("sk-ant-"):
+    print(f"[startup] Claude API key loaded (...{_key[-4:]})")
+else:
+    print("[startup] WARNING: no valid ANTHROPIC_API_KEY found in .env - AI features will use the "
+          "keyword fallback and the self-help checker will be unavailable. Add the key and restart.")
+
 app = FastAPI(title="Firm Finder")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 

@@ -38,6 +38,9 @@ ATOM = """<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom">
 <entry><id>http://www.legislation.gov.uk/id/ukpga/2004/34</id><title>Housing Act 2004</title></entry>
 <entry><id>http://www.legislation.gov.uk/id/ukpga/1988/50</id><title>Housing Act 1988</title></entry></feed>"""
 
+SECTION_XML = ("<Legislation xmlns='http://www.legislation.gov.uk/namespaces/legislation'><Primary><Body><P1group>"
+               "<Title>Tenancy deposits: requirements</Title><P1><P1para><Text>Any tenancy deposit paid must be dealt "
+               "with in accordance with an authorised scheme.</Text></P1para></P1></P1group></Body></Primary></Legislation>")
 GOOD_QUOTE = ("The scheme’s free dispute resolution service will decide how much is returned.")  # curly ' on purpose
 
 
@@ -45,7 +48,7 @@ def triage_fx(**kw):
     t = {"summary": "Tenant's landlord is keeping the deposit", "problem_type": "tenancy deposit dispute",
          "primary_area": "Leasehold", "secondary_areas": [], "needs_solicitor": False, "urgency": "normal",
          "deadline_warning": "", "firm_traits": [], "search_queries": ["tenancy deposit dispute"],
-         "red_flags": [], "_engine": "test"}
+         "red_flags": [], "topics": [], "legislation": [], "_engine": "test"}
     t.update(kw)
     return t
 
@@ -55,7 +58,7 @@ def ground_fx(**kw):
          "answer": "1. Ask your landlord which scheme protects your deposit.\n2. Use its free dispute service.",
          "facts": [{"fact": "whether the deposit was protected", "critical": True, "known": True},
                    {"fact": "tenancy type", "critical": False, "known": True}],
-         "page_says_get_advice": False, "acts": [{"title": "Housing Act", "year": 2004, "section": "213"}]}
+         "page_says_get_advice": False, "law_ids_used": ["L1"]}
     g.update(kw)
     return g
 
@@ -76,7 +79,9 @@ def env(monkeypatch):
             return 200, ATOM
         if url.endswith("/data.feed"):
             return 200, '<feed xmlns="http://www.w3.org/2005/Atom"></feed>'
-        return (200, "<xml/>") if url.endswith("/ukpga/2004/34/section/213/data.xml") else (404, "")
+        if url.endswith("/ukpga/2004/34/section/213/data.xml"):
+            return 200, SECTION_XML
+        return 404, ""
 
     state = {"triage": triage_fx(), "ground": ground_fx()}
 
@@ -88,6 +93,7 @@ def env(monkeypatch):
         calls["firms"] += 1
         return {"firms": [{"name": "Test Firm"}]}
 
+    legislation.locate.cache_clear()
     monkeypatch.setattr(govuk, "_get_json", fake_get_json)
     monkeypatch.setattr(legislation, "_get", fake_leg_get)
     monkeypatch.setattr(service, "run_triage", lambda *a, **k: state["triage"])
@@ -107,9 +113,10 @@ def test_self_help_when_verified_full_and_facts_known(env):
     g = r["guidance"]
     assert g["source"]["url"] == "https://www.gov.uk/tenancy-deposit-protection/disputes-and-problems"
     assert g["source"]["section"] == "Disputes and problems"
-    law = {x["url"]: x for x in g["law"]}
-    assert "https://www.legislation.gov.uk/ukpga/2004/34" in law                       # Act verified via feed
-    assert law["https://www.legislation.gov.uk/ukpga/2004/34"]["section_url"].endswith("/section/213")
+    assert g["law"] == [{"title": "Housing Act 2004", "url": "https://www.legislation.gov.uk/ukpga/2004/34",
+                         "section": "213", "section_url": "https://www.legislation.gov.uk/ukpga/2004/34/section/213",
+                         "applies": True}]                                              # s.214 404'd -> not shown
+    assert r["topics"] == [{"id": "tenancy_deposit", "label": "Tenancy deposit dispute"}]
     assert env.calls["firms"] == 0                                                      # no firm lookup needed
     assert not any("speeches" in u for u in env.calls["govuk"])                        # speech filtered out
 
@@ -213,17 +220,35 @@ def test_llm_unavailable_is_safe(env):
     assert r["route"] == "specialist" and r["related_pages"]
 
 
-def test_unknown_act_dropped(env):
-    env.state["ground"] = ground_fx(acts=[{"title": "Deposit Return Act", "year": 2019, "section": "4"}])
+def test_ai_suggested_fake_act_dropped(env):
+    env.state["triage"] = triage_fx(legislation=[{"title": "Deposit Return Act", "year": 2019, "sections": ["4"]}])
     urls = [x["url"] for x in guidance.assess(P)["guidance"]["law"]]
     assert all("2019" not in u for u in urls)
-    assert "https://www.legislation.gov.uk/ukpga/2004/34/section/213" in urls   # link GOV.UK page itself gives
 
 
-def test_bad_section_number_kept_off(env):
-    env.state["ground"] = ground_fx(acts=[{"title": "Housing Act", "year": 2004, "section": "999"}])
-    a = [x for x in guidance.assess(P)["guidance"]["law"] if x["url"].endswith("/ukpga/2004/34")][0]
-    assert a["section_url"] is None
+def test_legislation_text_sent_to_ai(env, monkeypatch):
+    seen = {}
+    def grab(model, system, tool, user, **k):
+        seen["user"] = user
+        return ground_fx()
+    monkeypatch.setattr(guidance, "_call_tool", grab)
+    guidance.assess(P)
+    assert '"id": "L1"' in seen["user"] and "authorised scheme" in seen["user"]
+    assert '"title": "Housing Act 2004 s.213"' in seen["user"]
+
+
+def test_quote_from_legislation_not_accepted_as_guidance(env):
+    env.state["ground"] = ground_fx(best_section_id="L1",
+                                    quote="Any tenancy deposit paid must be dealt with in accordance with an authorised scheme.")
+    r = guidance.assess(P)
+    assert r["guidance"] is None and r["route"] != "self_help"
+
+
+def test_known_topic_page_fetched_even_if_search_misses(env, monkeypatch):
+    real = govuk._get_json
+    monkeypatch.setattr(govuk, "_get_json", lambda url, params=None: {"results": []} if url.endswith("search.json") else real(url, params))
+    r = guidance.assess(P)
+    assert r["route"] == "self_help" and "tenancy-deposit-protection" in r["guidance"]["source"]["url"]
 
 
 # ---------------------------------------------------------------- units
@@ -303,3 +328,25 @@ def test_legislation_wrong_year_not_matched(env):
 
 def test_legislation_title_with_year_inline(env):
     assert legislation.find_act("Housing Act 2004")["url"].endswith("/ukpga/2004/34")
+
+
+def test_users_examples_hit_right_topics():
+    from firm_finder.topics import match
+    assert match("my employer fired me unfairly") == ["unfair_dismissal"]
+    assert set(match("I was sacked because I'm pregnant")) == {"unfair_dismissal", "discrimination_at_work"}
+    assert match("I've received a debt letter from the local council") == ["council_tax_debt"]
+    assert "unpaid_invoice_business" in match("A client hasn't paid our invoice for 3 months")
+    assert match("I got a parking fine") == ["parking_ticket"]
+    assert match("My neighbour's tree is blocking my light") == []
+
+
+def test_legislation_resolve_merges_and_falls_back(env):
+    out = legislation.resolve([{"title": "Housing Act", "year": 2004, "sections": ["213"]},
+                               {"title": "Housing Act 2004", "sections": ["213", "999"]},
+                               {"title": "Made Up Act", "year": 2020}])
+    assert [(o["title"], o["section"]) for o in out] == [("Housing Act 2004", "213")]
+
+
+def test_legislation_act_without_sections_linked(env):
+    out = legislation.resolve([{"title": "Housing Act", "year": 2004}])
+    assert out[0]["url"].endswith("/ukpga/2004/34") and out[0]["section"] is None

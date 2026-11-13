@@ -23,7 +23,9 @@ import os
 import re
 import unicodedata
 
-from . import ai, govuk, legislation, red_flags, service
+from concurrent.futures import ThreadPoolExecutor
+
+from . import ai, govuk, legislation, red_flags, service, topics
 
 THRESHOLD = 80
 MAX_ROUNDS = 2
@@ -40,7 +42,8 @@ GROUND_TOOL = {
         "type": "object",
         "properties": {
             "best_section_id": {"type": "string",
-                                "description": "Id (e.g. 'S3') of the ONE section that best answers the problem, or 'NONE'."},
+                                "description": "Id (e.g. 'S3') of the ONE GOV.UK section that best answers the problem, or 'NONE'. "
+                                               "Must be an S id - never an L (legislation) id."},
             "coverage": {"type": "string", "enum": ["full", "partial", "none"],
                          "description": "full = the section tells this user what they can do about THEIR situation; "
                                         "partial = relevant background but not what to do; none = not relevant."},
@@ -66,23 +69,21 @@ GROUND_TOOL = {
             "page_says_get_advice": {"type": "boolean",
                                      "description": "true ONLY if the GOV.UK text explicitly says someone in this "
                                                     "user's situation should get legal advice/a solicitor."},
-            "acts": {"type": "array", "maxItems": 2, "items": {
-                "type": "object",
-                "properties": {"title": {"type": "string", "description": "Exact short title, e.g. 'Consumer Rights Act'"},
-                               "year": {"type": "integer"},
-                               "section": {"type": "string", "description": "Section number if certain, else empty"}},
-                "required": ["title", "year"]},
-                "description": "Up to 2 Acts this guidance is based on - only if named in the text or you are "
-                               "certain. Leave empty rather than guess."},
+            "law_ids_used": {"type": "array", "items": {"type": "string"},
+                             "description": "Ids (L1, L2...) of the legislation sections that actually apply to this "
+                                            "user's problem. Empty if none of them apply."},
         },
-        "required": ["best_section_id", "coverage", "quote", "answer", "facts", "page_says_get_advice", "acts"],
+        "required": ["best_section_id", "coverage", "quote", "answer", "facts", "page_says_get_advice", "law_ids_used"],
     },
 }
 
 GROUND_SYSTEM = """You check whether official GOV.UK guidance answers a member of the public's legal problem
-(England & Wales). You are given their problem and numbered sections fetched from GOV.UK.
-- Use ONLY the given sections. Never add rules, deadlines or amounts from memory.
-- Pick the single best section. The quote must be copied exactly from it.
+(England & Wales). You are given their problem, numbered GOV.UK guidance sections (S1, S2...) and the text of relevant
+legislation sections from legislation.gov.uk (L1, L2...).
+- Use ONLY the given text. Never add rules, deadlines or amounts from memory.
+- The answer for the public must come from GOV.UK guidance: pick the single best S section and copy
+  the quote exactly from it. Use the L sections to check the guidance applies, and list which L
+  sections actually apply in law_ids_used.
 - List the key facts that decide which guidance applies (max 5). Mark a fact 'known' only if the user
   actually said it. Mark it 'critical' if the answer would change depending on it.
 - Be strict about coverage: 'full' only if the section tells THIS user what to do in THEIR situation.
@@ -149,18 +150,28 @@ def _with_answers(problem: str, answers: list[dict]) -> str:
     return f"{problem}\n\nMore details from the user:\n{extra}" if extra else problem
 
 
-def _verified_acts(acts: list[dict], section_text: str, page_links: list[str]) -> list[dict]:
+def _law_requests(topic_ids: list[str], triage: dict) -> list[dict]:
+    """Legislation to look up: curated topic laws first, then the AI's suggestions."""
     out = []
-    for a in (acts or [])[:2]:
-        found = legislation.find_act(a.get("title", ""), a.get("year"), a.get("section"))
-        if found:
-            found["named_on_govuk_page"] = _norm(a.get("title", "")) in _norm(section_text)
-            out.append(found)
-    for link in page_links[:2]:  # legislation links GOV.UK itself gives are trusted as-is
-        if not any(link.rstrip("/").startswith(o["url"]) for o in out):
-            out.append({"title": "Legislation linked from the GOV.UK page", "url": link,
-                        "section": None, "section_url": None, "named_on_govuk_page": True})
+    for tid in topic_ids:
+        for law in topics.BY_ID[tid].laws:
+            out.append({"title": law.title, "year": law.year, "sections": list(law.sections)})
+    for l in triage.get("legislation") or []:
+        out.append({"title": l.get("title", ""), "year": l.get("year"), "sections": l.get("sections") or []})
     return out
+
+
+def _law_view(law: list[dict], used_ids: set[str], page_links: list[str]) -> list[dict]:
+    items = []
+    for l in law:
+        items.append({"title": l["title"], "url": l["url"], "section": l["section"],
+                      "section_url": l["section_url"], "applies": l.get("id") in used_ids})
+    for link in page_links[:2]:  # legislation GOV.UK itself links to is trusted as-is
+        if not any(link.rstrip("/").startswith(i["url"]) for i in items):
+            items.append({"title": "Legislation linked from the GOV.UK page", "url": link,
+                          "section": None, "section_url": None, "applies": True})
+    used = [i for i in items if i["applies"]]
+    return used or items   # show what applies; if the AI flagged none, show what we checked
 
 
 def _specialist(base: dict, reason: str, triage: dict, find_firms: bool, firm_args: dict) -> dict:
@@ -205,15 +216,31 @@ def assess(problem: str, user_type: str = "individual", category: str | None = N
         return _specialist(out, "We couldn't be sure the general guidance fits your situation, "
                                 "so a solicitor is the safer next step.", t, find_firms, firm_args)
 
-    # 4. retrieve GOV.UK
-    pages, sections = govuk.retrieve(t.get("search_queries") or [problem])
+    # 4. retrieve GOV.UK guidance + legislation in parallel
+    topic_ids = list(dict.fromkeys([*t.get("topics", []), *topics.match(full_text)]))[:3]
+    known_paths = [p for tid in topic_ids for p in topics.BY_ID[tid].govuk_paths]
+    out["topics"] = [{"id": tid, "label": topics.BY_ID[tid].label} for tid in topic_ids]
+    with ThreadPoolExecutor(max_workers=2) as ex:
+        f_pages = ex.submit(govuk.retrieve, t.get("search_queries") or [problem], known_paths)
+        f_law = ex.submit(legislation.resolve, _law_requests(topic_ids, t))
+        pages, sections = f_pages.result()
+        try:
+            law = f_law.result()
+        except Exception as e:
+            print(f"[guidance] legislation lookup failed: {e}")
+            law = []
+    law_secs = [l for l in law if l.get("section_text")]
+    for i, l in enumerate(law_secs, 1):
+        l["id"] = f"L{i}"
     if not sections:
         return _ask_or_escalate(out, [], "We couldn't find official guidance that matches yet.",
                                 t, round_no, find_firms, firm_args)
 
     # 5. grounding call
     payload = {"problem": full_text, "user_type": user_type,
-               "sections": [{k: s[k] for k in ("id", "page_title", "section_title", "text")} for s in sections]}
+               "govuk_sections": [{k: s[k] for k in ("id", "page_title", "section_title", "text")} for s in sections],
+               "legislation_sections": [{"id": l["id"], "title": f"{l['title']} s.{l['section']}",
+                                         "text": l["section_text"]} for l in law_secs]}
     try:
         g = _call_tool(GROUND_MODEL, GROUND_SYSTEM, GROUND_TOOL,
                        f"<data>{json.dumps(payload, ensure_ascii=False)}</data>")
@@ -226,7 +253,7 @@ def assess(problem: str, user_type: str = "individual", category: str | None = N
                                 "fits. These official pages may still help.", t, find_firms, firm_args)
 
     by_id = {s["id"]: s for s in sections}
-    sec = by_id.get(str(g.get("best_section_id", "")).strip())
+    sec = by_id.get(str(g.get("best_section_id", "")).strip())   # only S ids are in by_id
     verified = bool(sec) and quote_on_page(g.get("quote", ""), sec["text"])
     facts = [f for f in (g.get("facts") or []) if isinstance(f, dict) and f.get("fact")][:5]
     sc = score(verified, g.get("coverage", "none"), facts)
@@ -238,7 +265,7 @@ def assess(problem: str, user_type: str = "individual", category: str | None = N
             "answer": g.get("answer", ""),
             "quote": g.get("quote", "").strip(),
             "source": {"title": sec["page_title"], "section": sec["section_title"], "url": sec["url"]},
-            "law": _verified_acts(g.get("acts", []), sec["text"], page_links),
+            "law": _law_view(law, {str(x) for x in (g.get("law_ids_used") or [])}, page_links),
             "other_pages": [{"title": p["title"], "url": p["url"]} for p in pages if p["url"] != sec["url"]
                             and not sec["url"].startswith(p["url"] + "/")],
         }

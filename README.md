@@ -19,11 +19,12 @@ The decision is made like this:
 | Step | What happens |
 |---|---|
 | 1. Red flags | A red flag sends the user **straight to a specialist**, whatever else is true. There are 11 "always see a lawyer" rules in `firm_finder/red_flags.py` (court papers, criminal, safety, losing home, immigration, statutory demand, over £10k, other side has a lawyer, etc.). They're checked by regex **and** by the AI, so reworded versions are caught too. |
-| 2. Retrieve | The AI writes GOV.UK search queries. The code fetches real pages from the official GOV.UK Search and Content APIs. The AI only reads those pages. |
+| 2. Retrieve | **Known topics first.** `firm_finder/topics.py` maps common problems to the right GOV.UK guides and legislation. Examples: unfair dismissal goes to `/dismissal` and `/employment-tribunals` plus the Employment Rights Act 1996 ss.94, 98 and 111; council debt goes to `/council-tax-arrears` plus the Local Government Finance Act 1992 and the Council Tax Regulations 1992. Topics are matched by keywords **and** by the AI. The AI also suggests extra legislation and writes GOV.UK-style search queries for anything not on the map. All of it is fetched from the official GOV.UK and legislation.gov.uk APIs. |
+| 2b. Read the law | The text of the relevant legislation sections is fetched from legislation.gov.uk and given to the AI with the guidance. The AI says which sections actually apply, and only those are shown as "the law behind this". |
 | 3. Ground | The AI picks the best section and must **copy the exact sentence** that answers the problem. The code checks that sentence is really on the page. If it isn't, there's no self-help answer. |
 | 4. Score | Confidence is **calculated, not guessed**: 50 points if the quote is verified on GOV.UK, 20 if the page fully covers their situation (10 if partly), and 30 × the share of key facts we know. It's capped at 79 if a critical fact is missing or the coverage is only partial. |
 | 5. Route | **80 or more → self-help.** Below 80 → up to 2 rounds of questions. Still below, or the user presses "I don't know" → specialist. If the GOV.UK page itself says "get legal advice" → specialist. |
-| 6. Law | Acts the AI names are **checked against legislation.gov.uk**. A link is only shown if the Act exists, and a section only if that section exists. |
+| 6. Law | Every Act and section is **checked against legislation.gov.uk** before it's shown. A made-up Act or section never appears. |
 
 If GOV.UK or the AI is down, it fails safe: the user is asked a question or sent to a specialist, never shown an unchecked answer.
 
@@ -69,11 +70,14 @@ Response (always the same shape):
 ```
 **Questions loop in React:** when `route` is `ask_more`, add each `{question, answer}` to `answers`, increase `round` by 1, and POST again. Send the same `problem` every time.
 
+### Adding topics
+Add a `Topic` to `firm_finder/topics.py`. Give it keywords, the GOV.UK paths and the `Law(title, year, sections)` entries. Check each GOV.UK path by opening `https://www.gov.uk/api/content/<path>`.
+
 ### Editing the red flags
 `firm_finder/red_flags.py` has one `Rule` per red flag: a label, a plain-English reason, and regex patterns. Add or change patterns there, then run the tests.
 
 ### Tests
-`python -m pytest -q` runs 30 offline tests, covering every route plus attempts to fake a quote, a page section or an Act. They include 48 checks that red flags fire when they should and stay quiet on everyday cases like parking fines, deposits and probate.
+`python -m pytest -q` runs 35 offline tests, covering every route plus attempts to fake a quote, a page section or an Act. They include 48 checks that red flags fire when they should and stay quiet on everyday cases like parking fines, deposits and probate.
 
 ---
 
@@ -155,6 +159,7 @@ Returns every practice area in the data. Useful for building category buttons.
 app.py                 FastAPI endpoints + test page (demo.html)
 firm_finder/guidance.py   self-help vs specialist pipeline + confidence score
 firm_finder/red_flags.py  'always see a lawyer' rules
+firm_finder/topics.py     known problems -> GOV.UK guides + legislation
 firm_finder/govuk.py      GOV.UK Search + Content API
 firm_finder/legislation.py  verify Acts/sections on legislation.gov.uk
 tests/                 offline test suite

@@ -18,7 +18,7 @@ TIMEOUT = 8
 
 # Citizen-facing guidance only (no news, speeches, stats, consultations...)
 ALLOWED_TYPES = {"guide", "answer", "transaction", "detailed_guide", "local_transaction"}
-MAX_PAGES = 3
+MAX_PAGES = 4
 SECTION_CHARS = 2500
 TOTAL_CHARS = 40_000
 
@@ -129,11 +129,14 @@ def fetch_page(link: str) -> dict | None:
             "updated": j.get("public_updated_at")}
 
 
-def retrieve(queries: list[str]) -> tuple[list[dict], list[dict]]:
-    """-> (pages, flat sections with ids S1..Sn, truncated to fit the prompt budget)."""
-    hits = search(queries)[:MAX_PAGES]
+def retrieve(queries: list[str], known_paths: list[str] | None = None) -> tuple[list[dict], list[dict]]:
+    """Known topic pages first (reliable), then search results; -> (pages, sections S1..Sn)."""
+    links = list(dict.fromkeys(known_paths or []))
+    if len(links) < MAX_PAGES:
+        links += [h["link"] for h in search(queries) if h["link"] not in links]
+    links = links[:MAX_PAGES]
     with ThreadPoolExecutor(max_workers=MAX_PAGES) as ex:
-        pages = [p for p in ex.map(lambda h: fetch_page(h["link"]), hits) if p]
+        pages = [p for p in ex.map(fetch_page, links) if p]
     sections, budget = [], TOTAL_CHARS
     for p in pages:
         for s in p["sections"]:

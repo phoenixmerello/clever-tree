@@ -31,6 +31,23 @@ def _client():
 NO_MATCH = "NONE"
 
 
+def _tool_call(client, *, tool: dict, messages: list, **kw):
+    """Call the API forcing `tool`. Some models (e.g. claude-sonnet-5-5) reject forced
+    tool_choice with a 400; for those, retry with tool_choice=auto and tell the model
+    in the prompt to answer only via the tool."""
+    try:
+        return client.messages.create(tools=[tool], messages=messages,
+                                      tool_choice={"type": "tool", "name": tool["name"]}, **kw)
+    except Exception as e:
+        if "tool_choice" not in str(e):
+            raise
+    msgs = [dict(m) for m in messages]
+    msgs[-1]["content"] = (f"{msgs[-1]['content']}\n\nRespond only by calling the "
+                           f"{tool['name']} tool. Do not reply in plain text.")
+    return client.messages.create(tools=[tool], messages=msgs,
+                                  tool_choice={"type": "auto"}, **kw)
+
+
 def _classify_tool(areas: list[str]) -> dict:
     enum = [*areas, NO_MATCH]
     return {
@@ -150,10 +167,9 @@ def classify(problem: str, areas: list[str], user_type: str = "individual",
         msg += f"Category they clicked in the app: {category_hint}\n"
     msg += f"<problem>\n{problem}\n</problem>"
     try:
-        r = client.messages.create(
-            model=CLASSIFY_MODEL, max_tokens=800, system=CLASSIFY_SYSTEM,
-            tools=[_classify_tool(areas)], tool_choice={"type": "tool", "name": "legal_triage"},
-            messages=[{"role": "user", "content": msg}],
+        r = _tool_call(
+            client, model=CLASSIFY_MODEL, max_tokens=800, system=CLASSIFY_SYSTEM,
+            tool=_classify_tool(areas), messages=[{"role": "user", "content": msg}],
         )
         out = next(b.input for b in r.content if b.type == "tool_use")
         valid = set(areas)
@@ -212,9 +228,9 @@ def rerank(triage: dict, shortlist: list[dict], top_n: int = 5) -> list[dict]:
                     "nearest_office_miles": c.get("distance_miles"), "town": c.get("town"),
                     "offices_nationally": c.get("office_count")} for c in shortlist]
         try:
-            r = client.messages.create(
-                model=RERANK_MODEL, max_tokens=1500, system=RERANK_SYSTEM,
-                tools=[RERANK_TOOL], tool_choice={"type": "tool", "name": "recommend_firms"},
+            r = _tool_call(
+                client, model=RERANK_MODEL, max_tokens=1500, system=RERANK_SYSTEM,
+                tool=RERANK_TOOL,
                 messages=[{"role": "user", "content":
                            f"Pick the best {top_n}.\n<triage>{json.dumps(triage)}</triage>\n"
                            f"<candidates>{json.dumps(compact)}</candidates>"}],

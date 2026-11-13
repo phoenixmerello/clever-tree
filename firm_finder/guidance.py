@@ -95,9 +95,8 @@ def _call_tool(model: str, system: str, tool: dict, user: str, max_tokens: int =
     client = ai._client()
     if not client:
         return None
-    r = client.messages.create(model=model, max_tokens=max_tokens, system=system, tools=[tool],
-                               tool_choice={"type": "tool", "name": tool["name"]},
-                               messages=[{"role": "user", "content": user}])
+    r = ai._tool_call(client, model=model, max_tokens=max_tokens, system=system, tool=tool,
+                      messages=[{"role": "user", "content": user}])
     return next((b.input for b in r.content if b.type == "tool_use"), None)
 
 
